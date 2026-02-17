@@ -1,0 +1,7 @@
+services:
+  api-service:
+    build:
+      context: ./api-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"

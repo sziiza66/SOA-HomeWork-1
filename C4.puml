@@ -1,0 +1,53 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+
+skinparam nodesep 80
+skinparam ranksep 80
+
+Person(User, "Пользователь", "Покупает/продает товары")
+
+Boundary(hidden, "Содержит чувствительные данные (например, данные карты, личную информацию)") {
+    Container(api, "Web страница + server-side API", "", "Единая точка входа, маршрутизация.")
+
+    Container(payment_service, "Payment Service", "", "Обработка платежей")
+    ContainerDb(payment_db, "Payment DB", "", "Платежные транзакции")
+
+    Container(user_service, "User Service", "", "Управление личными данными пользователя, авторизация, маршрутизация запросов, требующих авторизации.")
+    ContainerDb(user_db, "User DB", "", "Данные пользователей")
+}
+
+Boundary(user-visible, "Не содержит чувствительных данных") {
+
+    Container(order_service, "Order Service", "", "Управление заказами")
+    ContainerDb(order_db, "Order DB", "", "Заказы")
+
+    Container(feed_service, "Feed Service", "", "Генерация персонализированной ленты + генерация уведомлений")
+    ContainerDb(feed_db, "Feed DB", "", "Кеш предпочтений пользователей и его уведомления")
+
+    Container(catalog_service, "Catalog Service", "", "Управление каталогом товаров")
+    ContainerDb(catalog_db, "Catalog DB", "", "Товары и категории")
+
+
+}
+
+Rel(User, api, "Любое взаимодействие: чтение каталога, регистрация, авторизация, покупка, продажа и т.д.", "")
+
+Rel(api, user_service, "Регистрация/авторизация, авторизованные запросы", "синхронно")
+Rel(user_service, payment_service, "Запросы, затрагивающие работу с деньгами и банком", "синхронно")
+Rel(user_service, order_service, "Запросы управления заказами", "синхронно")
+Rel(user_service, feed_service, "Запрос получения уведомлений, ленты", "синхронно")
+Rel_L(feed_service, order_service, "Чтение заказов", "асинхронно, Order Service публикует обновления заказов в очередь")
+Rel(feed_service, catalog_service, "Получение товаров", "асинхронно, Catalog Service публикует обновления товаров в очередь")
+Rel(user_service, catalog_service, "Продажа товаров (добавление новых)", "синхронно")
+Rel(api, catalog_service, "Получение информации о конкретном товаре (не требует авторизации)", "синхронно")
+
+
+Rel(user_service, user_db, "Reads/Writes")
+Rel(catalog_service, catalog_db, "Reads/Writes")
+Rel_D(feed_service, feed_db, "Reads/Writes")
+Rel(order_service, order_db, "Reads/Writes")
+Rel(payment_service, payment_db, "Reads/Writes")
+
+
+@enduml
